@@ -113,3 +113,39 @@ If you want get the :sparkles: latest :sparkles: (and unstable :bomb:) version o
 * [Stratis.Bitcoin](https://ci.appveyor.com/api/projects/stratis/stratisbitcoinfullnode/artifacts/nuget/Stratis.Bitcoin.1.0.7-alpha.nupkg?job=Configuration%3A%20Release)
 
 
+BiblePay
+--------
+
+Stratis Compile Instructions:
+
+You must have Visual Studio 2017 or higher.  Community edition also works.
+NOTE: Version 15.7.4 or higher is required.  If lower, please follow instructions to upgrade visual studio by clicking the yellow flag in the top right.
+NOTE: .NET Standard 2.0 is required.  This is higher than the default, therefore you must upgrade .NET standard.
+Stratis does not use the .NET framework, it actually uses 100% cross platform .NET Standard 2.0 libs.
+
+Compiling:
+
+Load the "Stratis.Bitcoin.FullNode" project (which contains the Stratis.StratisD project).
+Compile the entire project.
+If no errors occur, set Stratis.StratisD as the startup project.
+Launch.
+
+This will launch biblepayd in stratis.  The blockchain should sync.
+A default wallet will be created (yourname.json).
+The blocks data is stored in %appdata%\StratisNode\BiblePayMain (Main means prod chain).
+
+The daemon runs as a console app, but launches threads for different functions.
+The daemons output appears on the console, but it can also be viewed via HTTP.
+
+To launch the HTTP GUI:
+Open web browser, navigate to:  http://localhost:37220/
+The web browser contains the same output as the console app.  Hit f5 to refresh.
+
+To launch the Biblepay GUI (written by us):
+Navigate to :  Http://localhost:37220/BiblePayGui/StratisWeb
+
+Only two test functions work on the GUI:
+Function 1:  Click on "Leaderboard | Leaderboard".  This shows a weblist of Heat Miners.  This is old data, but proves the GUI weblist is working.
+Function 2:  Click on "Settings | Tools".  This is a page section that allows you to enter some Biblepay settings.  Change the CPID to something random and click Save,
+and this will prove a dialog can be shown with actual local-posted MVC data.
+

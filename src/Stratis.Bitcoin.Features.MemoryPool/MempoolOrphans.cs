@@ -281,8 +281,11 @@ namespace Stratis.Bitcoin.Features.MemoryPool
                             // witness-stripped transactions, as they can have been malleated.
                             // See https://github.com/bitcoin/bitcoin/issues/8279 for details.
 
-                            this.AddToRecentRejects(orphanHash);
-                         }
+                            lock (this.lockObject)
+                            {
+                                this.recentRejects.TryAdd(orphanHash, orphanHash);
+                            }
+                        }
                     }
 
                     // TODO: implement sanity checks.
@@ -299,22 +302,6 @@ namespace Stratis.Bitcoin.Features.MemoryPool
                         this.EraseOrphanTxLock(hash);
                     }
                 }
-            }
-
-            this.logger.LogTrace("(-)");
-        }
-
-        /// <summary>
-        /// Adds transaction hash to recent rejects.
-        /// </summary>
-        /// <param name="orphanHash">Hash to add.</param>
-        public void AddToRecentRejects(uint256 orphanHash)
-        {
-            this.logger.LogTrace("{0}:'{1}'", nameof(orphanHash), orphanHash);
-
-            lock (this.lockObject)
-            {
-                this.recentRejects.TryAdd(orphanHash, orphanHash);
             }
 
             this.logger.LogTrace("(-)");

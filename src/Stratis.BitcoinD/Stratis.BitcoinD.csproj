@@ -14,10 +14,13 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <NoWarn>1701;1702;1705;IDE0008;</NoWarn>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
 
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
+    <StartupObject>Stratis.BitcoinD.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

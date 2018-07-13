@@ -20,6 +20,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         {
             Block block = context.ValidationContext.Block;
 
+            /*
             if (!(block is PosBlock posBlock))
             {
                 this.Logger.LogTrace("(-)[INVALID_CAST]");
@@ -32,6 +33,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 this.Logger.LogTrace("(-)[BAD_SIGNATURE]");
                 ConsensusErrors.BadBlockSignature.Throw();
             }
+            */
 
             return Task.CompletedTask;
         }
@@ -60,7 +62,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
 
             TxOut txout = block.Transactions[1].Outputs[1];
 
-            if (PayToPubkeyTemplate.Instance.CheckScriptPubKey(txout.ScriptPubKey))
+            if (PayToPubkeyTemplate.Instance.CheckScriptPubKey(this.Parent.Network, txout.ScriptPubKey))
             {
                 PubKey pubKey = PayToPubkeyTemplate.Instance.ExtractScriptPubKeyParameters(txout.ScriptPubKey);
                 bool res = pubKey.Verify(block.GetHash(), new ECDSASignature(block.BlockSignature.Signature));

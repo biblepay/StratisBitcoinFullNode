@@ -9,7 +9,6 @@ using Stratis.Bitcoin.Controllers;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
 using Stratis.Bitcoin.Features.Miner.Models;
 using Stratis.Bitcoin.Features.RPC;
-using Stratis.Bitcoin.Features.RPC.Exceptions;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Utilities;
@@ -73,7 +72,7 @@ namespace Stratis.Bitcoin.Features.Miner
             this.logger.LogTrace("({0}:{1})", nameof(blockCount), blockCount);
             if (blockCount <= 0)
             {
-                throw new RPCServerException(RPCErrorCode.RPC_INVALID_REQUEST, "The number of blocks to mine must be higher than zero.");
+                throw new RPCServerException(NBitcoin.RPC.RPCErrorCode.RPC_INVALID_REQUEST, "The number of blocks to mine must be higher than zero.");
             }
 
             WalletAccountReference accountReference = this.GetAccount();
@@ -150,11 +149,11 @@ namespace Stratis.Bitcoin.Features.Miner
 
             string walletName = this.walletManager.GetWalletsNames().FirstOrDefault();
             if (walletName == null)
-                throw new RPCServerException(RPCErrorCode.RPC_INVALID_REQUEST, "No wallet found");
+                throw new RPCServerException(NBitcoin.RPC.RPCErrorCode.RPC_INVALID_REQUEST, "No wallet found");
 
             HdAccount account = this.walletManager.GetAccounts(walletName).FirstOrDefault();
             if (account == null)
-                throw new RPCServerException(RPCErrorCode.RPC_INVALID_REQUEST, "No account found on wallet");
+                throw new RPCServerException(NBitcoin.RPC.RPCErrorCode.RPC_INVALID_REQUEST, "No account found on wallet");
 
             var res = new WalletAccountReference(walletName, account.Name);
 

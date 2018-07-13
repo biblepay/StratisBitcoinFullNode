@@ -33,13 +33,11 @@ namespace NBitcoin
                 return _Instance;
             }
         }
-
         public int MaxScriptSizeLimit
         {
             get;
             private set;
         }
-
         protected override bool FastCheckScriptPubKey(Script scriptPubKey, out bool needMoreCheck)
         {
             byte[] bytes = scriptPubKey.ToBytes(true);
@@ -53,22 +51,18 @@ namespace NBitcoin
             needMoreCheck = true;
             return true;
         }
-
-        protected override bool CheckScriptPubKeyCore(Script scriptPubKey, Op[] scriptPubKeyOps)
+        protected override bool CheckScriptPubKeyCore(Network network, Script scriptPubKey, Op[] scriptPubKeyOps)
         {
             return scriptPubKeyOps.Skip(1).All(o => o.PushData != null && !o.IsInvalid);
         }
-
-        public byte[][] ExtractScriptPubKeyParameters(Script scriptPubKey)
+        public byte[][] ExtractScriptPubKeyParameters(Network network, Script scriptPubKey)
         {
             bool needMoreCheck;
             if(!FastCheckScriptPubKey(scriptPubKey, out needMoreCheck))
                 return null;
-
             Op[] ops = scriptPubKey.ToOps().ToArray();
-            if(!CheckScriptPubKeyCore(scriptPubKey, ops))
+            if(!CheckScriptPubKeyCore(network, scriptPubKey, ops))
                 return null;
-
             return ops.Skip(1).Select(o => o.PushData).ToArray();
         }
 
@@ -150,7 +144,7 @@ namespace NBitcoin
             ops.Add(OpcodeType.OP_CHECKMULTISIG);
             return new Script(ops);
         }
-        protected override bool CheckScriptPubKeyCore(Script scriptPubKey, Op[] scriptPubKeyOps)
+        protected override bool CheckScriptPubKeyCore(Network network, Script scriptPubKey, Op[] scriptPubKeyOps)
         {
             Op[] ops = scriptPubKeyOps;
             if(ops.Length < 3)
@@ -175,13 +169,13 @@ namespace NBitcoin
             return ops[ops.Length - 1].Code == OpcodeType.OP_CHECKMULTISIG;
         }
 
-        public PayToMultiSigTemplateParameters ExtractScriptPubKeyParameters(Script scriptPubKey)
+        public PayToMultiSigTemplateParameters ExtractScriptPubKeyParameters(Network network, Script scriptPubKey)
         {
             bool needMoreCheck;
             if(!FastCheckScriptPubKey(scriptPubKey, out needMoreCheck))
                 return null;
             Op[] ops = scriptPubKey.ToOps().ToArray();
-            if(!CheckScriptPubKeyCore(scriptPubKey, ops))
+            if(!CheckScriptPubKeyCore(network, scriptPubKey, ops))
                 return null;
 
             //already checked in CheckScriptPubKeyCore
@@ -239,7 +233,7 @@ namespace NBitcoin
                 return false;
             if(scriptPubKeyOps != null)
             {
-                if(!CheckScriptPubKeyCore(scriptPubKey, scriptPubKeyOps))
+                if(!CheckScriptPubKeyCore(network, scriptPubKey, scriptPubKeyOps))
                     return false;
                 int? sigCountExpected = scriptPubKeyOps[0].GetInt();
                 if(sigCountExpected == null)
@@ -346,7 +340,7 @@ namespace NBitcoin
                    bytes[1] == 0x14 &&
                    bytes[22] == (byte)OpcodeType.OP_EQUAL;
         }
-        protected override bool CheckScriptPubKeyCore(Script scriptPubKey, Op[] scriptPubKeyOps)
+        protected override bool CheckScriptPubKeyCore(Network network, Script scriptPubKey, Op[] scriptPubKeyOps)
         {
             return true;
         }
@@ -391,7 +385,7 @@ namespace NBitcoin
         {
             var ops = new List<Op>();
             var multiSigTemplate = new PayToMultiSigTemplate();
-            bool multiSig = multiSigTemplate.CheckScriptPubKey(redeemScript);
+            bool multiSig = multiSigTemplate.CheckScriptPubKey(network, redeemScript);
             if(multiSig)
                 ops.Add(OpcodeType.OP_0);
             foreach(TransactionSignature sig in signatures)
@@ -481,7 +475,7 @@ namespace NBitcoin
                  scriptPubKey.ToBytes(true)[scriptPubKey.Length - 1] == 0xac;
         }
 
-        protected override bool CheckScriptPubKeyCore(Script scriptPubKey, Op[] scriptPubKeyOps)
+        protected override bool CheckScriptPubKeyCore(Network network, Script scriptPubKey, Op[] scriptPubKeyOps)
         {
             return true;
         }
@@ -670,7 +664,7 @@ namespace NBitcoin
                    bytes[24] == (byte)OpcodeType.OP_CHECKSIG;
         }
 
-        protected override bool CheckScriptPubKeyCore(Script scriptPubKey, Op[] scriptPubKeyOps)
+        protected override bool CheckScriptPubKeyCore(Network network, Script scriptPubKey, Op[] scriptPubKeyOps)
         {
             return true;
         }
@@ -729,22 +723,20 @@ namespace NBitcoin
                 return TxOutType.TX_PUBKEYHASH;
             }
         }
-    }
 
+    }
     public abstract class ScriptTemplate
     {
-        public virtual bool CheckScriptPubKey(Script scriptPubKey)
+        public virtual bool CheckScriptPubKey(Network network, Script scriptPubKey)
         {
             if(scriptPubKey == null)
                 throw new ArgumentNullException("scriptPubKey");
-
             bool needMoreCheck;
             bool result = FastCheckScriptPubKey(scriptPubKey, out needMoreCheck);
             if(needMoreCheck)
             {
-                result &= CheckScriptPubKeyCore(scriptPubKey, scriptPubKey.ToOps().ToArray());
+                result &= CheckScriptPubKeyCore(network, scriptPubKey, scriptPubKey.ToOps().ToArray());
             }
-
             return result;
         }
 
@@ -754,7 +746,7 @@ namespace NBitcoin
             return true;
         }
 
-        protected abstract bool CheckScriptPubKeyCore(Script scriptPubKey, Op[] scriptPubKeyOps);
+        protected abstract bool CheckScriptPubKeyCore(Network network, Script scriptPubKey, Op[] scriptPubKeyOps);
         public virtual bool CheckScriptSig(Network network, Script scriptSig, Script scriptPubKey)
         {
             if(scriptSig == null)
@@ -819,7 +811,7 @@ namespace NBitcoin
             return GenerateScriptPubKey(address.Hash);
         }
 
-        public override bool CheckScriptPubKey(Script scriptPubKey)
+        public override bool CheckScriptPubKey(Network network, Script scriptPubKey)
         {
             if(scriptPubKey == null)
                 throw new ArgumentNullException("scriptPubKey");
@@ -829,7 +821,7 @@ namespace NBitcoin
 
         public new WitKeyId ExtractScriptPubKeyParameters(Network network, Script scriptPubKey)
         {
-            if(!CheckScriptPubKey(scriptPubKey))
+            if(!CheckScriptPubKey(network, scriptPubKey))
                 return null;
             var data = new byte[20];
             Array.Copy(scriptPubKey.ToBytes(true), 2, data, 0, 20);
@@ -912,7 +904,7 @@ namespace NBitcoin
             return GenerateScriptPubKey(address.Hash);
         }
 
-        public override bool CheckScriptPubKey(Script scriptPubKey)
+        public override bool CheckScriptPubKey(Network network, Script scriptPubKey)
         {
             if(scriptPubKey == null)
                 throw new ArgumentNullException("scriptPubKey");
@@ -921,7 +913,7 @@ namespace NBitcoin
         }
         public new WitScriptId ExtractScriptPubKeyParameters(Network network, Script scriptPubKey)
         {
-            if(!CheckScriptPubKey(scriptPubKey))
+            if(!CheckScriptPubKey(network, scriptPubKey))
                 return null;
             var data = new byte[32];
             Array.Copy(scriptPubKey.ToBytes(true), 2, data, 0, 32);
@@ -991,7 +983,7 @@ namespace NBitcoin
             return scriptSig.Length == 0;
         }
 
-        public override bool CheckScriptPubKey(Script scriptPubKey)
+        public override bool CheckScriptPubKey(Network network, Script scriptPubKey)
         {
             if(scriptPubKey == null)
                 throw new ArgumentNullException("scriptPubKey");
@@ -1013,7 +1005,7 @@ namespace NBitcoin
 
         public TxDestination ExtractScriptPubKeyParameters(Network network, Script scriptPubKey)
         {
-            if(!CheckScriptPubKey(scriptPubKey))
+            if(!CheckScriptPubKey(network, scriptPubKey))
                 return null;
             Op[] ops = scriptPubKey.ToOps().ToArray();
             if(ops.Length != 2 || ops[1].PushData == null)
@@ -1029,7 +1021,7 @@ namespace NBitcoin
         }
         public WitProgramParameters ExtractScriptPubKeyParameters2(Network network, Script scriptPubKey)
         {
-            if(!CheckScriptPubKey(scriptPubKey))
+            if(!CheckScriptPubKey(network, scriptPubKey))
                 return null;
             Op[] ops = scriptPubKey.ToOps().ToArray();
             if(ops.Length != 2 || ops[1].PushData == null)
@@ -1049,7 +1041,7 @@ namespace NBitcoin
             }
         }
 
-        protected override bool CheckScriptPubKeyCore(Script scriptPubKey, Op[] scriptPubKeyOps)
+        protected override bool CheckScriptPubKeyCore(Network network, Script scriptPubKey, Op[] scriptPubKeyOps)
         {
             throw new NotImplementedException();
         }

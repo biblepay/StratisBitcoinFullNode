@@ -4,6 +4,7 @@ using NBitcoin.Policy;
 
 namespace NBitcoin
 {
+
     public static class StandardScripts
     {
         private static readonly ScriptTemplate[] _StandardTemplates = new ScriptTemplate[]
@@ -16,8 +17,10 @@ namespace NBitcoin
             PayToWitTemplate.Instance
         };
 
-        public static bool IsStandardTransaction(Transaction tx, Network network)
+        public static bool IsStandardTransaction(Transaction tx, Network network = null)
         {
+            network = network ?? Network.Main;
+
             return new StandardTransactionPolicy(network).Check(tx, null).Length == 0;
         }
 
@@ -26,25 +29,25 @@ namespace NBitcoin
             return tx.Outputs.All(vout => IsStandardScriptPubKey(network, vout.ScriptPubKey));
         }
 
-        public static ScriptTemplate GetTemplateFromScriptPubKey(Script script)
+        public static ScriptTemplate GetTemplateFromScriptPubKey(Network network, Script script)
         {
-            return _StandardTemplates.FirstOrDefault(t => t.CheckScriptPubKey(script));
+            return _StandardTemplates.FirstOrDefault(t => t.CheckScriptPubKey(network, script));
         }
 
         public static bool IsStandardScriptPubKey(Network network, Script scriptPubKey)
         {
-            return _StandardTemplates.Any(template => template.CheckScriptPubKey(scriptPubKey));
+            return _StandardTemplates.Any(template => template.CheckScriptPubKey(network, scriptPubKey));
         }
-
         private static bool IsStandardScriptSig(Network network, Script scriptSig, Script scriptPubKey)
         {
-            ScriptTemplate template = GetTemplateFromScriptPubKey(scriptPubKey);
+            ScriptTemplate template = GetTemplateFromScriptPubKey(network, scriptPubKey);
             if(template == null)
                 return false;
 
             return template.CheckScriptSig(network, scriptSig, scriptPubKey);
         }
 
+        //
         // Check transaction inputs, and make sure any
         // pay-to-script-hash transactions are evaluating IsStandard scripts
         //
@@ -54,6 +57,7 @@ namespace NBitcoin
         // script can be anything; an attacker could use a very
         // expensive-to-check-upon-redemption script like:
         //   DUP CHECKSIG DROP ... repeated 100 times... OP_1
+        //
         public static bool AreInputsStandard(Network network, Transaction tx, CoinsView coinsView)
         {
             if(tx.IsCoinBase)

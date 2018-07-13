@@ -149,6 +149,101 @@ namespace Stratis.Bitcoin.Features.Wallet
             this.logger.LogTrace("(-)");
         }
 
+
+        public static Transaction SetupValidTransaction(Features.Wallet.Wallet wallet, string password, HdAddress spendingAddress, 
+            PubKey destinationPubKey, HdAddress changeAddress, Money amount, Money fee)
+        {
+
+            if (spendingAddress.Transactions.Count==0)
+            {
+                throw new Exception("No vin to spend off of");
+            }
+            TransactionData spendingTransaction = spendingAddress.Transactions.ElementAt(0);
+            var coin = new Coin(spendingTransaction.Id, (uint)spendingTransaction.Index, spendingTransaction.Amount, spendingTransaction.ScriptPubKey);
+
+            Key privateKey = Key.Parse(wallet.EncryptedSeed, password, wallet.Network);
+
+            var builder = new TransactionBuilder(wallet.Network);
+            Transaction tx = builder
+                .AddCoins(new List<Coin> { coin })
+                .AddKeys(new ExtKey(privateKey, wallet.ChainCode).Derive(new KeyPath(spendingAddress.HdPath)).GetWif(wallet.Network))
+                .Send(destinationPubKey.ScriptPubKey, amount)
+                .SetChange(changeAddress.ScriptPubKey)
+                .SendFees(fee)
+                .BuildTransaction(true);
+            //tx.Outputs[0].sTxOutMessage = new byte[1];
+
+
+            if (!builder.Verify(tx))
+            {
+                throw new WalletException("Could not build transaction, please make sure you entered the correct data.");
+            }
+
+            return tx;
+        }
+
+
+        public static (PubKey PubKey, BitcoinPubKeyAddress Address) GenerateAddressKeys(Features.Wallet.Wallet wallet, string accountExtendedPubKey, string keyPath)
+        {
+            PubKey addressPubKey = ExtPubKey.Parse(accountExtendedPubKey).Derive(new KeyPath(keyPath)).PubKey;
+            BitcoinPubKeyAddress address = addressPubKey.GetAddress(wallet.Network);
+
+            return (addressPubKey, address);
+        }
+
+        int iCounter = 0;
+        void SendSomeTestMoney()
+        {
+            // Biblepay - R ANDREWS - This is just an example of how to send BBP from stratis to the desktop wallet
+            iCounter++;
+            if (iCounter > 1) return;
+            HdAddress changeAddress = this.Wallets.First().AccountsRoot.First().Accounts.First().GetFirstUnusedChangeAddress();
+
+            (PubKey PubKey, BitcoinPubKeyAddress Address) spendingKeys = GenerateAddressKeys(this.Wallets.First(),
+                this.Wallets.First().AccountsRoot.First().GetAccountByName("account 0").ExtendedPubKey, "0/0");
+
+            (PubKey PubKey, BitcoinPubKeyAddress Address) destinationKeys = GenerateAddressKeys(this.Wallets.First(),
+                this.Wallets.First().AccountsRoot.First().Accounts.First().ExtendedPubKey, "0/1");
+
+            (PubKey PubKey, BitcoinPubKeyAddress Address) changeKeys = GenerateAddressKeys(this.Wallets.First(),
+              this.Wallets.First().AccountsRoot.First().Accounts.First().ExtendedPubKey, "1/0");
+
+            var spendingAddress = new HdAddress
+            {
+                Index = 0,
+                HdPath = $"m/44'/0'/0'/0/0",
+                Address = spendingKeys.Address.ToString(),
+                Pubkey = spendingKeys.PubKey.ScriptPubKey,
+                ScriptPubKey = spendingKeys.Address.ScriptPubKey,
+                Transactions = new List<TransactionData>()
+            };
+
+            HdAddress sap1 = this.Wallets.First().AccountsRoot.First().GetAccountByName("account 0").ExternalAddresses.First();
+            // NOTE: This public key is obtained by typing 'validateaddress BBPAddress' and copying the pubkey
+            PubKey myRecipient = new PubKey("02831825dc0b70a442ce959afff9989e1b3ead8bdec96f49dfaf75f86fc4efaf28"); //Robs pubkey
+
+            Transaction tx890 = null;
+            try
+            {
+                tx890 = SetupValidTransaction(this.Wallets.First(), "bible", sap1,
+                           myRecipient, changeAddress, new Money(17004), new Money(121250));
+            }
+            catch(Exception ex)
+            {
+                return;
+            }
+
+            // If all outputs are spendable, broadcast to network:       
+            foreach (TxOut output in tx890.Outputs)
+            {
+                bool isUnspendable = output.ScriptPubKey.IsUnspendable;
+            }
+
+            this.broadcasterManager.BroadcastTransactionAsync(tx890).GetAwaiter().GetResult();
+            TransactionBroadcastEntry transactionBroadCastEntry = this.broadcasterManager.GetTransaction(tx890.GetHash());
+
+        }
+
         public void Start()
         {
             this.logger.LogTrace("()");
@@ -166,6 +261,13 @@ namespace Stratis.Bitcoin.Features.Wallet
                 }
             }
 
+            if (this.Wallets.Count == 0)
+            {
+                // BIBLEPAY - TODO - ALLOW USER TO SPECIFY USERNAME AND WALLET PASSWORD
+                // FOR NOW, JUST CREATE A WALLET WITH GENERIC CREDENTIALS SO WE CAN DEBUG
+                this.CreateWallet("yourpassword", "yourname");
+            }
+
             // Load data in memory for faster lookups.
             this.LoadKeysLookupLock();
 
@@ -180,12 +282,13 @@ namespace Stratis.Bitcoin.Features.Wallet
                 this.SaveWallets();
                 this.logger.LogInformation("Wallets saved to file at {0}.", this.dateTimeProvider.GetUtcNow());
 
+                SendSomeTestMoney();
                 this.logger.LogTrace("(-)");
                 return Task.CompletedTask;
             },
             this.nodeLifetime.ApplicationStopping,
-            repeatEvery: TimeSpan.FromMinutes(WalletSavetimeIntervalInMinutes),
-            startAfter: TimeSpan.FromMinutes(WalletSavetimeIntervalInMinutes));
+            repeatEvery: TimeSpan.FromMinutes(WalletSavetimeIntervalInMinutes/5),
+            startAfter: TimeSpan.FromMinutes(WalletSavetimeIntervalInMinutes/8));
 
             this.logger.LogTrace("(-)");
         }

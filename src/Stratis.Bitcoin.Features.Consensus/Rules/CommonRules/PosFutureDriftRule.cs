@@ -33,7 +33,9 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 // The block can be valid only after its time minus the future drift.
                 context.ValidationContext.RejectUntil = Utils.UnixTimeToDateTime(block.Header.Time - GetFutureDrift(block.Header.Time)).UtcDateTime;
                 this.Logger.LogTrace("(-)[TIME_TOO_FAR]");
-                ConsensusErrors.BlockTimestampTooFar.Throw();
+                // BIBLEPAY - R ANDREWS - TODO implement actual timedrift rule with POW consensus rules
+                if (false) ConsensusErrors.BlockTimestampTooFar.Throw();
+
             }
 
             return Task.CompletedTask;

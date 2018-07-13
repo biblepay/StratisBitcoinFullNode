@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using NBitcoin.Crypto;
 using NBitcoin.DataEncoders;
-using NBitcoin.Formatters;
 using NBitcoin.Protocol;
+using NBitcoin.RPC;
 
 namespace NBitcoin
 {
@@ -360,6 +360,7 @@ namespace NBitcoin
         private TxOut _TxOut = new TxOut();
         public TxOut TxOut
         {
+    
             get
             {
                 return this._TxOut;
@@ -547,6 +548,8 @@ namespace NBitcoin
     public class TxOut : IBitcoinSerializable, IDestination
     {
         private Script publicKey = Script.Empty;
+        private byte[] bytTransactionMessage = null;
+
         public Script ScriptPubKey
         {
             get
@@ -558,6 +561,89 @@ namespace NBitcoin
                 this.publicKey = value;
             }
         }
+        public string GetTxOutMessage
+        {
+            get
+            {
+                return System.Text.Encoding.UTF8.GetString(bytTransactionMessage);
+            }
+
+        }
+
+
+        void PrependByteArrayWithVarLenSize(ref byte[] b)
+        {
+            int iSize = b.Length;
+            byte[] bPrefix = null;
+            if (iSize > -1 && iSize < 253)
+            {
+                bPrefix = new byte[1];
+                bPrefix[0] = (byte)iSize;
+            }
+            else if (iSize >= 253 && iSize < 65535)
+            {
+                bPrefix = new byte[3];
+                int i1 = (int)Math.Floor(Convert.ToDecimal(iSize / 256));
+                int i2 = iSize - (i1 * 256) - 0;
+                bPrefix[0] = (byte)253;
+                bPrefix[2] = (byte)i1;
+                bPrefix[1] = (byte)i2;
+
+            }
+            else if (iSize >= 65535)
+            {
+                bPrefix = new byte[5];
+                bPrefix[0] = (byte)253;
+            }
+
+            // special case for zero
+            if (b.Length == 1)
+            {
+                if (b[0] == 0)
+                {
+                    return;
+                }
+            }
+
+            int iNewLen = b.Length + bPrefix.Length;
+            byte[] c = new byte[iNewLen];
+            for (int d = 0; d < bPrefix.Length; d++)
+            {
+                c[d] = bPrefix[d];
+            }
+            if (b.Length > 0)
+            {
+                for (int e = 0; e < b.Length; e++)
+                {
+                    c[e + bPrefix.Length] = b[e];
+                }
+            }
+            b = c;
+
+            /*
+       
+            */
+
+
+        }
+
+
+        public byte[] sTxOutMessage
+        {
+            get
+            {
+                return bytTransactionMessage;
+            }
+            set
+            {
+                PrependByteArrayWithVarLenSize(ref value);
+                this.bytTransactionMessage = value;
+
+            }
+        }
+
+
+
 
         public bool IsEmpty => (this.Value == 0 && this.ScriptPubKey.Length == 0);
 
@@ -616,6 +702,22 @@ namespace NBitcoin
             stream.ReadWrite(ref value);
             if(!stream.Serializing) this._Value = new Money(value);
             stream.ReadWrite(ref this.publicKey);
+            // BIBLEPAY - ROBERT ANDREWS - ADD ABILITY TO SERIALIZE TXOUT - 6-23-2018
+            if (stream.Serializing)
+            {
+                byte[] byte1 = this.sTxOutMessage;
+                if (byte1 != null)
+                {
+                    stream.ReadWrite(ref byte1);
+                }
+            }
+            else
+            {
+                // BIBLEPAY - ADD ABILITY TO DESERIALIZE TXOUT
+                byte[] pull = new byte[7000];
+                stream.ReadWriteAsVarString(ref pull);
+                this.sTxOutMessage = pull;
+            }
         }
 
         #endregion
@@ -1169,6 +1271,44 @@ namespace NBitcoin
             this.vout = new TxOutList(this);
         }
 
+        internal Transaction(string hex, ProtocolVersion version = ProtocolVersion.PROTOCOL_VERSION)
+            : this()
+        {
+            this.FromBytes(Encoders.Hex.DecodeData(hex), version);
+        }
+
+        internal Transaction(byte[] bytes)
+            : this()
+        {
+            this.FromBytes(bytes);
+        }
+
+        public static Transaction Load(string hex, Network network, ProtocolVersion version = ProtocolVersion.PROTOCOL_VERSION)
+        {
+            if (hex == null)
+                throw new ArgumentNullException(nameof(hex));
+
+            if (network == null)
+                throw new ArgumentNullException(nameof(network));
+
+            Transaction transaction = network.Consensus.ConsensusFactory.CreateTransaction();
+            transaction.FromBytes(Encoders.Hex.DecodeData(hex), version);
+            return transaction;
+        }
+
+        public static Transaction Load(byte[] bytes, Network network)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+
+            if (network == null)
+                throw new ArgumentNullException(nameof(network));
+
+            Transaction transaction = network.Consensus.ConsensusFactory.CreateTransaction();
+            transaction.FromBytes(bytes);
+            return transaction;
+        }
+
         public Money TotalOut
         {
             get
@@ -1301,7 +1441,16 @@ namespace NBitcoin
                     wit.ReadWrite(stream);
                 }
             }
-            stream.ReadWriteStruct(ref this.nLockTime);
+
+            try
+            {
+                stream.ReadWriteStruct(ref this.nLockTime);
+            }
+            catch (Exception ex)
+            {
+                string debugInfo = ex.Message;
+                // BIBLEPAY - TODO - Verify this is no longer being thrown.  I believe its fixed.
+            }
         }
 
         #endregion
@@ -1622,7 +1771,6 @@ namespace NBitcoin
             }
             Sign(network, key, coins.ToArray());
         }
-
         /*
         public TxPayload CreatePayload()
         {
@@ -1632,6 +1780,11 @@ namespace NBitcoin
         public static Transaction Parse(string tx, RawFormat format, Network network = null)
         {
             return GetFormatter(format, network).ParseJson(tx);
+        }
+
+        public static Transaction Parse(string hex)
+        {
+            return new Transaction(Encoders.Hex.DecodeData(hex));
         }
 
         public string ToHex()

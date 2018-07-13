@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.PlatformAbstractions;
 using Swashbuckle.AspNetCore.Swagger;
@@ -37,7 +38,7 @@ namespace Stratis.Bitcoin.Features.Api
 
                         builder =>
                         {
-                            var allowedDomains = new[] { "http://localhost", "http://localhost:4200" };
+                            var allowedDomains = new[] { "http://localhost", "http://localhost:4200", "http://localhost:37221", "http://localhost:37220" };
 
                             builder
                             .WithOrigins(allowedDomains)
@@ -61,7 +62,7 @@ namespace Stratis.Bitcoin.Features.Api
                     }
                 })
                 // add serializers for NBitcoin objects
-                .AddJsonOptions(options => Utilities.JsonConverters.Serializer.RegisterFrontConverters(options.SerializerSettings))
+                .AddJsonOptions(options => NBitcoin.JsonConverters.Serializer.RegisterFrontConverters(options.SerializerSettings))
                 .AddControllers(services);
 
             // Register the Swagger generator, defining one or more Swagger documents
@@ -93,8 +94,24 @@ namespace Stratis.Bitcoin.Features.Api
             loggerFactory.AddDebug();
 
             app.UseCors("CorsPolicy");
+            // Biblepay - Add GUI Support by adding MVC Web Server and Static Files Server (for JS and images)
+            app.UseMvc(routes =>
+            {
+                routes.MapRoute(
+                    name: "default",
+                    template: "{controller=Home}/{action=Index}/{id?}");
+            });
 
-            app.UseMvc();
+            app.UseStaticFiles();
+            string sCurrentDir = Directory.GetCurrentDirectory();
+            string sWWWRoot = USGDFramework.clsStaticHelper.GetDirectoryUp(Directory.GetCurrentDirectory(), 4);
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(Path.Combine(sWWWRoot, "wwwroot")),
+                RequestPath = "/StratisWeb"
+            });
+            // End of Biblepay MVC
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();

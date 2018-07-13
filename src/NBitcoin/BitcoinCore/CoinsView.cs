@@ -6,31 +6,39 @@ namespace NBitcoin.BitcoinCore
 {
     public class CoinsView
     {
-        public CoinsView(NoSqlRepository noSqlRepository)
+        private readonly NoSqlRepository index;
+
+        public CoinsView(NoSqlRepository index)
         {
-            this.NoSqlRepository = noSqlRepository ?? throw new ArgumentNullException(nameof(noSqlRepository));
+            this.index = index ?? throw new ArgumentNullException("index");
         }
 
-        public CoinsView(Network network)
-            : this(new InMemoryNoSqlRepository(network))
+        public CoinsView()
+            : this(new InMemoryNoSqlRepository())
         {
         }
 
-        public NoSqlRepository NoSqlRepository { get; }
+        public NoSqlRepository Index
+        {
+            get
+            {
+                return this.index;
+            }
+        }
 
         public Coins GetCoins(uint256 txId)
         {
-            return this.NoSqlRepository.GetAsync<Coins>(txId.ToString()).GetAwaiter().GetResult();
+            return this.Index.GetAsync<Coins>(txId.ToString()).GetAwaiter().GetResult();
         }
 
         public Task<Coins> GetCoinsAsync(uint256 txId)
         {
-            return this.NoSqlRepository.GetAsync<Coins>(txId.ToString());
+            return this.Index.GetAsync<Coins>(txId.ToString());
         }
 
         public void SetCoins(uint256 txId, Coins coins)
         {
-            this.NoSqlRepository.PutAsync(txId.ToString(), coins);
+            this.Index.PutAsync(txId.ToString(), coins);
         }
 
         public bool HaveCoins(uint256 txId)
@@ -45,13 +53,13 @@ namespace NBitcoin.BitcoinCore
 
         public async Task<uint256> GetBestBlockAsync()
         {
-            uint256.MutableUint256 block = await this.NoSqlRepository.GetAsync<uint256.MutableUint256>("B").ConfigureAwait(false);
+            uint256.MutableUint256 block = await this.Index.GetAsync<uint256.MutableUint256>("B").ConfigureAwait(false);
             return block == null ? uint256.Zero : block.Value;
         }
 
         public void SetBestBlock(uint256 blockId)
         {
-            this.NoSqlRepository.PutAsync("B", blockId.AsBitcoinSerializable());
+            this.Index.PutAsync("B", blockId.AsBitcoinSerializable());
         }
 
         public bool HaveInputs(Transaction tx)
@@ -59,7 +67,7 @@ namespace NBitcoin.BitcoinCore
             if (!tx.IsCoinBase)
             {
                 // first check whether information about the prevout hash is available
-                foreach (TxIn input in tx.Inputs)
+                foreach(TxIn input in tx.Inputs)
                 {
                     OutPoint prevout = input.PrevOut;
                     if (!HaveCoins(prevout.Hash))
@@ -95,7 +103,7 @@ namespace NBitcoin.BitcoinCore
 
         public CoinsView CreateCached()
         {
-            return new CoinsView(new CachedNoSqlRepository(this.NoSqlRepository));
+            return new CoinsView(new CachedNoSqlRepository(this.Index));
         }
 
         public void AddTransaction(Consensus consensus, Transaction tx, int height)

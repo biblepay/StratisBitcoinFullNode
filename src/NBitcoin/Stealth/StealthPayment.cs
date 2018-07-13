@@ -71,6 +71,7 @@ namespace NBitcoin.Stealth
             return CreatePaymentScript(address.SignatureCount, address.SpendPubKeys.Select(p => p.UncoverReceiver(scan, ephemKey)).ToArray());
         }
 
+
         public static KeyId[] ExtractKeyIDs(Script script)
         {
             KeyId keyId = PayToPubkeyHashTemplate.Instance.ExtractScriptPubKeyParameters(script);
@@ -80,7 +81,7 @@ namespace NBitcoin.Stealth
             }
             else
             {
-                PayToMultiSigTemplateParameters para = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(script);
+                PayToMultiSigTemplateParameters para = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(Network.Main, script);
                 if(para == null)
                     throw new ArgumentException("Invalid stealth spendable output script", "spendable");
                 return para.PubKeys.Select(k => k.Hash).ToArray();
@@ -92,7 +93,6 @@ namespace NBitcoin.Stealth
             get;
             private set;
         }
-
         public BitcoinAddress[] GetAddresses(Network network)
         {
             return this.StealthKeys.Select(k => k.GetAddress(network)).ToArray();

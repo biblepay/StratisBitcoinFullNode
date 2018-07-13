@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using Newtonsoft.Json;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Utilities;
@@ -136,7 +137,7 @@ namespace Stratis.Bitcoin.Features.WatchOnlyWallet
                 if (prevTransactionData == null)
                     continue;
 
-                var prevTransaction = this.network.CreateTransaction(prevTransactionData.Hex);
+                var prevTransaction = Transaction.Load(prevTransactionData.Hex, this.network);
 
                 // Check if the previous transaction's outputs contain one of our addresses.
                 foreach (TxOut prevOutput in prevTransaction.Outputs)
@@ -357,7 +358,7 @@ namespace Stratis.Bitcoin.Features.WatchOnlyWallet
 
             foreach (TransactionData transactionData in this.Wallet.WatchedAddresses[scriptToCheck.ToString()].Transactions.Values)
             {
-                var transaction = this.network.CreateTransaction(transactionData.Hex);
+                var transaction = Transaction.Load(transactionData.Hex, this.network);
 
                 foreach (TxIn input in transaction.Inputs)
                 {
@@ -368,7 +369,7 @@ namespace Stratis.Bitcoin.Features.WatchOnlyWallet
                     if (prevTransactionData == null)
                         continue;
 
-                    var prevTransaction = this.network.CreateTransaction(prevTransactionData.Hex);
+                    var prevTransaction = Transaction.Load(prevTransactionData.Hex, this.network);
 
                     // A sanity check to ensure the referenced output affects the desired address
                     if (prevTransaction.Outputs[input.PrevOut.N].ScriptPubKey == scriptToCheck)

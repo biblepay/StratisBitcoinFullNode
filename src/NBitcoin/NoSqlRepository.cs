@@ -7,16 +7,16 @@ namespace NBitcoin
 {
     public abstract class NoSqlRepository
     {
-        public readonly Network Network;
+        private readonly Network network;
 
-        protected NoSqlRepository(Network network)
+        protected NoSqlRepository(Network network = null)
         {
-            this.Network = network;
+            this.network = network ?? Network.Main;
         }
 
         public Task PutAsync(string key, IBitcoinSerializable obj)
         {
-            return PutBytes(key, obj == null ? null : obj.ToBytes(this.Network.Consensus.ConsensusFactory));
+            return PutBytes(key, obj == null ? null : obj.ToBytes(this.network.Consensus.ConsensusFactory));
         }
 
         public void Put(string key, IBitcoinSerializable obj)
@@ -29,10 +29,10 @@ namespace NBitcoin
             byte[] data = await GetBytes(key).ConfigureAwait(false);
             if (data == null)
                 return default(T);
-            T obj = this.Network.Consensus.ConsensusFactory.TryCreateNew<T>();
+            T obj = this.network.Consensus.ConsensusFactory.TryCreateNew<T>();
             if (obj == null)
                 obj = Activator.CreateInstance<T>();
-            obj.ReadWrite(data, consensusFactory: this.Network.Consensus.ConsensusFactory);
+            obj.ReadWrite(data, consensusFactory: this.network.Consensus.ConsensusFactory);
             return obj;
         }
 

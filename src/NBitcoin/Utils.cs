@@ -249,7 +249,7 @@ namespace NBitcoin
         }
     }
 
-    public static class ByteArrayExtensions
+    internal static class ByteArrayExtensions
     {
         internal static bool StartWith(this byte[] data, byte[] versionBytes)
         {
@@ -262,7 +262,7 @@ namespace NBitcoin
             }
             return true;
         }
-        public static byte[] SafeSubarray(this byte[] array, int offset, int count)
+        internal static byte[] SafeSubarray(this byte[] array, int offset, int count)
         {
             if(array == null)
                 throw new ArgumentNullException("array");

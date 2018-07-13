@@ -59,7 +59,7 @@ namespace Stratis.Bitcoin.Features.Miner
 
             TextFileConfiguration config = nodeSettings.ConfigReader;
 
-            this.Mine = config.GetOrDefault<bool>("mine", false, this.logger);
+            this.Mine = config.GetOrDefault<bool>("mine", true, this.logger);
             if (this.Mine)
                 this.MineAddress = config.GetOrDefault<string>("mineaddress", null, this.logger);
 

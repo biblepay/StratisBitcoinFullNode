@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NBitcoin;
-using Stratis.Bitcoin.Utilities.JsonConverters;
+using NBitcoin.JsonConverters;
 
 namespace Stratis.Bitcoin.Features.RPC
 {

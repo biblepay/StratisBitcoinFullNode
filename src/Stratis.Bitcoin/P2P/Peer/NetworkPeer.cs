@@ -867,7 +867,6 @@ namespace Stratis.Bitcoin.P2P.Peer
                 try
                 {
                     behavior.Detach();
-                    behavior.Dispose();
                 }
                 catch (Exception ex)
                 {

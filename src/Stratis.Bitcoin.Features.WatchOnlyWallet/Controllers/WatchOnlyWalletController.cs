@@ -82,8 +82,8 @@ namespace Stratis.Bitcoin.Features.WatchOnlyWallet.Controllers
 
                     foreach (KeyValuePair<string, TransactionData> transactionData in watchAddress.Value.Transactions)
                     {
-                        Transaction transaction = watchOnlyWallet.Network.CreateTransaction(transactionData.Value.Hex);
-                        watchedAddressModel.Transactions.Add(new TransactionVerboseModel(transaction, watchOnlyWallet.Network));
+                        watchedAddressModel.Transactions.Add(new TransactionVerboseModel(
+                            Transaction.Load(transactionData.Value.Hex, watchOnlyWallet.Network), watchOnlyWallet.Network));
                     }
 
                     model.WatchedAddresses.Add(watchedAddressModel);
@@ -93,7 +93,8 @@ namespace Stratis.Bitcoin.Features.WatchOnlyWallet.Controllers
                 {
                     var watchedTransactionModel = new WatchedTransactionModel
                     {
-                        Transaction = new TransactionVerboseModel(watchOnlyWallet.Network.CreateTransaction(transaction.Value.Hex), watchOnlyWallet.Network)
+                        Transaction = new TransactionVerboseModel(
+                            Transaction.Load(transaction.Value.Hex, watchOnlyWallet.Network), watchOnlyWallet.Network)
                     };
 
                     model.WatchedTransactions.Add(watchedTransactionModel);

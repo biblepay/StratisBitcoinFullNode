@@ -5,21 +5,31 @@ namespace NBitcoin
 {
     public class NoSqlTransactionRepository : ITransactionRepository
     {
-        public NoSqlRepository Repository { get; }
+        private readonly NoSqlRepository repository;
+        public NoSqlRepository Repository
+        {
+            get
+            {
+                return this.repository;
+            }
+        }
 
-        public NoSqlTransactionRepository(Network network)
+        public NoSqlTransactionRepository(Network network = null)
             :this(new InMemoryNoSqlRepository(network))
         {
-        }
 
+        }
         public NoSqlTransactionRepository(NoSqlRepository repository)
         {
-            this.Repository = repository ?? throw new ArgumentNullException("repository");
+            if(repository == null)
+                throw new ArgumentNullException("repository");
+            this.repository = repository;
         }
+        #region ITransactionRepository Members
 
         public Task<Transaction> GetAsync(uint256 txId)
         {
-            return this.Repository.GetAsync<Transaction>(GetId(txId));
+            return this.repository.GetAsync<Transaction>(GetId(txId));
         }
 
         private string GetId(uint256 txId)
@@ -29,7 +39,9 @@ namespace NBitcoin
 
         public Task PutAsync(uint256 txId, Transaction tx)
         {
-            return this.Repository.PutAsync(GetId(txId), tx);
+            return this.repository.PutAsync(GetId(txId), tx);
         }
+
+        #endregion
     }
 }

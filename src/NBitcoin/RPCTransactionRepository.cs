@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using NBitcoin;
+using NBitcoin.RPC;
 
-namespace Stratis.Bitcoin.Features.RPC
+namespace NBitcoin
 {
     public class RPCTransactionRepository : ITransactionRepository
     {

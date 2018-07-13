@@ -16,7 +16,6 @@ namespace NBitcoin.Stealth
             }
             throw new ArgumentException("No nonce can satisfy the given bitfield, use another ephemKey");
         }
-
         public static StealthMetadata TryParse(Script metadata)
         {
             var result = new StealthMetadata();
@@ -31,11 +30,9 @@ namespace NBitcoin.Stealth
             }
             return result;
         }
-
         private StealthMetadata()
         {
         }
-
         public StealthMetadata(Script metadata)
         {
             if(!Fill(this, metadata))
@@ -53,10 +50,9 @@ namespace NBitcoin.Stealth
         }
 
         private static TxNullDataTemplate _Template = new TxNullDataTemplate(1024 * 4);
-
         private static bool Fill(StealthMetadata output, Script metadata)
         {
-            byte[][] datas = _Template.ExtractScriptPubKeyParameters(metadata);
+            byte[][] datas = _Template.ExtractScriptPubKeyParameters(Network.Main, metadata);
             if(datas == null)
                 return false;
             foreach(byte[] data in datas)

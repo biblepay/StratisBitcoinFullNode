@@ -1,6 +1,4 @@
-﻿using NBitcoin;
-
-namespace Stratis.Bitcoin.Features.RPC
+﻿namespace NBitcoin.RPC
 {
     public class FundRawTransactionResponse
     {

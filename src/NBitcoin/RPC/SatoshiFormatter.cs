@@ -5,7 +5,7 @@ using NBitcoin.DataEncoders;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace NBitcoin.Formatters
+namespace NBitcoin.RPC
 {
     internal class SatoshiFormatter : RawFormatter
     {
@@ -126,7 +126,7 @@ namespace NBitcoin.Formatters
                 }
                 else
                 {
-                    PayToMultiSigTemplateParameters multi = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(txout.ScriptPubKey);
+                    PayToMultiSigTemplateParameters multi = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(this.Network, txout.ScriptPubKey);
                     if (multi != null)
                         WritePropertyValue(writer, "reqSigs", multi.SignatureCount);
                     WritePropertyValue(writer, "type", GetScriptType(txout.ScriptPubKey.FindTemplate(this.Network)));

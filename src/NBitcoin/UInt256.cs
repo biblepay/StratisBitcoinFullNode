@@ -4,6 +4,215 @@ using NBitcoin.DataEncoders;
 
 namespace NBitcoin
 {
+
+    public class arith256
+    {
+        arith256 _Value;
+        public ulong[] pn = new ulong[8];
+
+        public uint256 GetUint256()
+        {
+            uint256 a = ArithToUint256();
+            return a;
+        }
+
+        public uint256 ArithToUint256()
+        {
+            uint256 b;
+            byte[] byteOut = new byte[32];
+
+            for (uint x = 0; x < pn.Length; ++x)
+            {
+                byte[] d = GetLE32FromArith(x * 4, pn[x]);
+                byteOut[x * 4] = d[0];
+                byteOut[x * 4 + 1] = d[1];
+                byteOut[x * 4 + 2] = d[2];
+                byteOut[x * 4 + 3] = d[3];
+            }
+            b = new uint256(byteOut);
+            return b;
+        }
+
+        static uint ReadLE32(uint256 a, int ByteOffset)
+        {
+            int value32 = a.GetByte(ByteOffset);
+            value32 += (a.GetByte(ByteOffset + 1) << 8);
+            value32 += (a.GetByte(ByteOffset + 2) << 16);
+            value32 += (a.GetByte(ByteOffset + 3) << 24);
+            return (uint)value32;
+        }
+
+        byte[] GetLE32FromArith(uint dstPtr, ulong value32)
+        {
+            byte[] d = new byte[4];
+            d[0] = (byte)value32;
+            d[1] = (byte)(value32 >> 8);
+            d[2] = (byte)(value32 >> 16);
+            d[3] = (byte)(value32 >> 24);
+            return d;
+        }
+
+        public arith256 Value
+        {
+            get
+            {
+                return _Value;
+            }
+            set
+            {
+                _Value = value;
+            }
+        }
+
+        public arith256(ulong[] pnin)
+        {
+            for (int z = 0; z < pnin.Length; z++)
+            {
+                pn[z] = pnin[z];
+            }
+        }
+        public arith256(uint256 a)
+        {
+            for (uint x = 0; x < pn.Length; ++x)
+            {
+                pn[x] = ReadLE32(a, (int)x * 4);
+            }
+        }
+
+        private static readonly ulong IMASK = 0xffffffffL;
+
+        public void MultiplyStratis(uint z)
+        {
+            ulong carry = 0;
+            for (uint i = 0; i < pn.Length; i++)
+            {
+                ulong n = carry + (ulong)(z * pn[i]);
+                pn[i] = (uint)(n & IMASK);
+                carry = (n >> 32);
+            }
+        }
+
+        public int CompareTo(arith256 b)
+        {
+            for (int i = pn.Length - 1; i >= 0; i--)
+            {
+                if (pn[i] < b.pn[i])
+                    return -1;
+                if (pn[i] > b.pn[i])
+                    return 1;
+            }
+            return 0;
+        }
+
+
+        public void LeftShift(int shift)
+        {
+            ulong[] a = new ulong[pn.Length];
+            for (int z = 0; z < pn.Length; z++)
+            {
+                a[z] = pn[z];
+            }
+            for (int i = 0; i < pn.Length; i++)
+                pn[i] = 0;
+            int k = shift / 32;
+            shift = shift % 32;
+            for (int i = 0; i < pn.Length; i++)
+            {
+                if (i + k + 1 < pn.Length && shift != 0)
+                    pn[i + k + 1] |= (a[i] >> (32 - shift));
+                if (i + k < pn.Length)
+                    pn[i + k] |= (a[i] << shift);
+            }
+        }
+
+        public void RightShift(int shift)
+        {
+
+            ulong[] a = new ulong[pn.Length];
+            for (int z = 0; z < pn.Length; z++)
+            {
+                a[z] = pn[z];
+            }
+            for (int i = 0; i < pn.Length; i++)
+            {
+                pn[i] = 0;
+            }
+            int k = shift / 32;
+            shift = shift % 32;
+            for (int i = 0; i < pn.Length; i++)
+            {
+                if (i - k - 1 >= 0 && shift != 0)
+                    pn[i - k - 1] |= (a[i] << (32 - shift));
+                if (i - k >= 0)
+                    pn[i - k] |= (a[i] >> shift);
+            }
+        }
+
+        public void Add(arith256 b)
+        {
+            ulong carry = 0;
+            for (int i = 0; i < pn.Length; i++)
+            {
+                ulong n = carry + pn[i] + b.pn[i];
+                pn[i] = n & 0xffffffff;
+                carry = n >> 32;
+            }
+        }
+
+
+        public void Subtract(ulong[] y)
+        {
+            int iT = pn.Length;
+            int iV = y.Length;
+            int xStart = 0;
+            int yStart = 0;
+            ulong m;
+            ulong borrow = 0;
+            do
+            {
+                m = (pn[--iT] & IMASK) - (y[--iV] & IMASK) + borrow;
+                pn[iT] = (ulong)m;
+                borrow = (ulong)(m >> 63);
+            }
+            while (iV > yStart);
+            if (borrow != 0)
+            {
+                while (--pn[--iT] == (ulong)IMASK)
+                {
+                }
+            }
+        }
+
+
+        public void DivideStratis(uint Z)
+        {
+            arith256 div = new arith256(pn);
+            arith256 num = new arith256(pn);
+            ulong quotient = 0;                   // the quotient.
+            int num_bits = num.pn.Length * 8;
+            int div_bits = div.pn.Length * 8; // Num of BITS
+            if (div_bits == 0) throw new Exception("Division by zero");
+            if (div_bits > num_bits) return; // Answer == 0
+            int shift = num_bits - div_bits;
+            div.LeftShift(shift); // shift so that div and num align.
+            while (shift >= 0)
+            {
+                if (num.CompareTo(div) == 1 || num.CompareTo(div) == 0)
+                {
+                    num.Subtract(div.pn);
+                    int originalvalue = (int)pn[shift / 32];
+                    originalvalue |= ((int)1 << (int)(shift & 31)); // set a bit of the result.
+                    pn[shift / 32] = (ulong)originalvalue;
+                }
+                div.RightShift(1); // shift back
+                shift--;
+            }
+            // num now contains the remainder of the division.
+            // return *this;
+        }
+    }
+
+
     public class uint256
     {
         public class MutableUint256 : IBitcoinSerializable

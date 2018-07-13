@@ -14,10 +14,10 @@ namespace NBitcoin
     /// </summary>
     public class BlockHeader : IBitcoinSerializable
     {
-        public const int Size = 80;
+        internal const int Size = 80;
 
         /// <summary>Current header version.</summary>
-        public virtual int CurrentVersion => 3;
+        public int CurrentVersion = 1;
 
         private static BigInteger Pow256 = BigInteger.ValueOf(2).Pow(256);
 
@@ -109,11 +109,23 @@ namespace NBitcoin
             if (hash != null)
                 return hash;
 
-            using (var hs = new HashStream())
+
+            if (true)
             {
-                this.ReadWrite(new BitcoinStream(hs, true));
-                hash = hs.GetHash();
+                if (this.version > 6 && false)
+                    hash = Hashes.Hash256(this.ToBytes());
+                else
+                    hash = this.GetPoWHash();
             }
+            else
+            {
+                using (HashStream hs = new HashStream())
+                {
+                    this.ReadWrite(new BitcoinStream(hs, true));
+                    hash = hs.GetHash();
+                }
+            }
+
 
             hashes = this.hashes;
             if (hashes != null)
@@ -130,7 +142,9 @@ namespace NBitcoin
         /// <returns>A hash.</returns>
         public virtual uint256 GetPoWHash()
         {
-            return this.GetHash();
+            //return this.GetHash();
+            return HashX11.Instance.Hash(this.ToBytes());
+
         }
 
         [Obsolete("Call PrecomputeHash(true, true) instead")]
@@ -156,9 +170,10 @@ namespace NBitcoin
         public bool CheckProofOfWork()
         {
             BigInteger bits = this.Bits.ToBigInteger();
+            //R ANDREWS - BIBLEPAY - TODO: Implement Actual POW check and Bits Check (This requires DGW to be ported (dark gravity wave) so we can have the correct next diff level and next diff bits)
+            return true;
             if ((bits.CompareTo(BigInteger.Zero) <= 0) || (bits.CompareTo(Pow256) >= 0))
                 return false;
-
             return this.GetPoWHash() <= this.Bits.ToUInt256();
         }
 

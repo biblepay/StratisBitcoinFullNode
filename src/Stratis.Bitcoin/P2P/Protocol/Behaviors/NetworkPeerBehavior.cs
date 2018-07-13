@@ -5,7 +5,7 @@ using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.P2P.Protocol.Behaviors
 {
-    public interface INetworkPeerBehavior : IDisposable
+    public interface INetworkPeerBehavior
     {
         INetworkPeer AttachedPeer { get; }
         void Attach(INetworkPeer peer);
@@ -16,6 +16,7 @@ namespace Stratis.Bitcoin.P2P.Protocol.Behaviors
     public abstract class NetworkPeerBehavior : INetworkPeerBehavior
     {
         private object cs = new object();
+        private List<IDisposable> disposables = new List<IDisposable>();
         public INetworkPeer AttachedPeer { get; private set; }
 
         protected abstract void AttachCore();
@@ -23,6 +24,11 @@ namespace Stratis.Bitcoin.P2P.Protocol.Behaviors
         protected abstract void DetachCore();
 
         public abstract object Clone();
+
+        protected void RegisterDisposable(IDisposable disposable)
+        {
+            this.disposables.Add(disposable);
+        }
 
         public void Attach(INetworkPeer peer)
         {
@@ -62,13 +68,12 @@ namespace Stratis.Bitcoin.P2P.Protocol.Behaviors
                     return;
 
                 this.DetachCore();
-            }
-        }
+                foreach (IDisposable dispo in this.disposables)
+                    dispo.Dispose();
 
-        ///  <inheritdoc />
-        public virtual void Dispose()
-        {
-            this.AttachedPeer = null;
+                this.disposables.Clear();
+                this.AttachedPeer = null;
+            }
         }
 
         INetworkPeerBehavior INetworkPeerBehavior.Clone()

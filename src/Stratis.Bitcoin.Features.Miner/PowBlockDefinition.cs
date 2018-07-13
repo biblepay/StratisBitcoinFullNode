@@ -48,6 +48,15 @@ namespace Stratis.Bitcoin.Features.Miner
 
             base.OnBuild(chainTip, scriptPubKey);
 
+            // BIBLEPAY - TODO - Modify the OnBuild event to store the correct POW mined block value 
+            // And verify a new vout[0] contains the stratis version XML
+
+            /*
+              this.block.Transactions[0].Outputs[0].Value = 25000;
+              this.block.Transactions[0].Outputs[0].sTxOutMessage = new byte[1];
+            */
+
+            
             this.TestBlockValidity();
 
             this.logger.LogTrace("(-)");

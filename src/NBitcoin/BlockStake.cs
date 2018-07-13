@@ -202,18 +202,6 @@ namespace NBitcoin
         {
             return new PosTransaction();
         }
-
-        /// <inheritdoc />
-        public override Transaction CreateTransaction(string hex)
-        {
-            return new PosTransaction(hex);
-        }
-
-        /// <inheritdoc />
-        public override Transaction CreateTransaction(byte[] bytes)
-        {
-            return new PosTransaction(bytes);
-        }
     }
 
     /// <summary>
@@ -222,7 +210,7 @@ namespace NBitcoin
     public class PosBlockHeader : BlockHeader
     {
         /// <inheritdoc />
-        public override int CurrentVersion => 7;
+        public int Current;
 
         /// <inheritdoc />
         public override uint256 GetHash()
@@ -236,7 +224,7 @@ namespace NBitcoin
             if (hash != null)
                 return hash;
 
-            if (this.version > 6)
+            if (this.version > 6 && false)
                 hash = Hashes.Hash256(this.ToBytes());
             else
                 hash = this.GetPoWHash();
@@ -253,7 +241,7 @@ namespace NBitcoin
         /// /// <inheritdoc />
         public override uint256 GetPoWHash()
         {
-            return HashX13.Instance.Hash(this.ToBytes());
+            return HashX11.Instance.Hash(this.ToBytes());
         }
     }
 

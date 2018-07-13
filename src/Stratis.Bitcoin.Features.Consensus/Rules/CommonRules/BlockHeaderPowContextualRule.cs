@@ -30,7 +30,10 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
             if (header.Bits != context.NextWorkRequired)
             {
                 this.Logger.LogTrace("(-)[BAD_DIFF_BITS]");
-                ConsensusErrors.BadDiffBits.Throw();
+
+                // BIBLEPAY - TODO - CONSENSUS - CHECK FOR CORRECT BITNESS (Requires DGW to be ported)
+                // ConsensusErrors.BadDiffBits.Throw();
+
             }
 
             // Check timestamp against prev.

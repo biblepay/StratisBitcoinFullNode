@@ -525,7 +525,7 @@ namespace NBitcoin
         /// </summary>
         public bool IsWitness(Network network)
         {
-            return PayToWitTemplate.Instance.CheckScriptPubKey(this);
+            return PayToWitTemplate.Instance.CheckScriptPubKey(network, this);
         }
 
         public override string ToString()
@@ -664,6 +664,9 @@ namespace NBitcoin
                 return GetHash(sss);
             }
 
+
+
+
             if(nIn >= txTo.Inputs.Count)
             {
                 Utils.log("ERROR: SignatureHash() : nIn=" + nIn + " out of range\n");
@@ -685,7 +688,7 @@ namespace NBitcoin
             var scriptCopy = new Script(scriptCode._Script);
             scriptCopy.FindAndDelete(OpcodeType.OP_CODESEPARATOR);
 
-            Transaction txCopy = network.CreateTransaction(txTo.ToBytes());
+            Transaction txCopy = Transaction.Load(txTo.ToBytes(), network);
 
             //Set all TxIn script to empty string
             foreach(TxIn txin in txCopy.Inputs)
@@ -860,7 +863,7 @@ namespace NBitcoin
 
         public bool IsPayToScriptHash(Network network)
         {
-            return PayToScriptHashTemplate.Instance.CheckScriptPubKey(this);
+            return PayToScriptHashTemplate.Instance.CheckScriptPubKey(network, this);
         }
 
         public BitcoinWitScriptAddress GetWitScriptAddress(Network network)
@@ -882,7 +885,7 @@ namespace NBitcoin
 
         public ScriptTemplate FindTemplate(Network network)
         {
-            return StandardScripts.GetTemplateFromScriptPubKey(this);
+            return StandardScripts.GetTemplateFromScriptPubKey(network, this);
         }
 
         /// <summary>
@@ -954,7 +957,7 @@ namespace NBitcoin
             }
             else
             {
-                PayToMultiSigTemplateParameters multiSig = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(this);
+                PayToMultiSigTemplateParameters multiSig = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(network, this);
                 if(multiSig != null)
                 {
                     result.AddRange(multiSig.PubKeys);
@@ -1202,12 +1205,12 @@ namespace NBitcoin
 
         private static Script CombineSignatures(Network network, Script scriptPubKey, TransactionChecker checker, byte[][] sigs1, byte[][] sigs2, HashVersion hashVersion)
         {
-            ScriptTemplate template = StandardScripts.GetTemplateFromScriptPubKey(scriptPubKey);
+            ScriptTemplate template = StandardScripts.GetTemplateFromScriptPubKey(network, scriptPubKey);
 
             if(template is PayToWitPubKeyHashTemplate)
             {
                 scriptPubKey = new KeyId(scriptPubKey.ToBytes(true).SafeSubarray(1, 20)).ScriptPubKey;
-                template = StandardScripts.GetTemplateFromScriptPubKey(scriptPubKey);
+                template = StandardScripts.GetTemplateFromScriptPubKey(network, scriptPubKey);
             }
             if(template == null || template is TxNullDataTemplate)
                 return PushAll(Max(sigs1, sigs2));
@@ -1266,7 +1269,7 @@ namespace NBitcoin
                 }
             }
 
-            PayToMultiSigTemplateParameters multiSigParams = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(scriptPubKey);
+            PayToMultiSigTemplateParameters multiSigParams = PayToMultiSigTemplate.Instance.ExtractScriptPubKeyParameters(network, scriptPubKey);
             if(multiSigParams == null)
                 throw new InvalidOperationException("The scriptPubKey is not a valid multi sig");
 
@@ -1338,5 +1341,44 @@ namespace NBitcoin
                 return ToOps().All(o => !o.IsInvalid);
             }
         }
+
+        public static uint256 GetCheapHash(BitcoinStream stream)
+        {
+            return GetHash(stream);
+        }
+
+        public static uint256 SerializeHash(string sSource)
+        {
+            HashStream hs = new HashStream();
+            BitcoinStream ss = new BitcoinStream(hs, true);
+            string sPrefix = "";
+            int i1 = 0;
+            int i2 = 0;
+            if (sSource.Length < 253)
+            {
+                sPrefix = ((char)(int)(sSource.Length)).ToString();
+            }
+            else
+            {
+                int iLen = sSource.Length;
+                i1 = iLen / 253;
+                i2 = iLen - (i1 * 256);
+                sPrefix = "000";
+            }
+            string sData = sPrefix + sSource;
+            ss.Type = SerializationType.Hash;
+            byte[] byte2 = System.Text.Encoding.ASCII.GetBytes(sData);
+            if (sSource.Length >= 253)
+            {
+                byte2[0] = (byte)253;
+                byte2[1] = (byte)i2;
+                byte2[2] = (byte)i1;
+            }
+            ss.ReadWrite(ref byte2);
+            uint256 iHash915 = Script.GetCheapHash(ss);
+            return iHash915;
+        }
+
+
     }
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using System.Linq;
+using NBitcoin;
 using NBitcoin.Protocol;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Builder;
@@ -17,19 +19,33 @@ namespace Stratis.StratisD
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        private const string DefaultStratisUri = "http://localhost:37221";
+
+        public static void Main(string[] args)
+        {
+            MainAsync(args).Wait();
+        }
+
+        public static async Task MainAsync(string[] args)
         {
             try
             {
-                var nodeSettings = new NodeSettings(protocolVersion:ProtocolVersion.ALT_PROTOCOL_VERSION, args:args);
+                string agent = "BiblePayStratis";
+                Network network = false ? Network.StratisTest : Network.BiblepayMain;
+                // BIBLEPAY - TODO - ADD 5 SEED NODES SO USER CAN SYNC THE VERY FIRST TIME
+                // FOR NOW, WE ARE ADDING ONE HARDCODED NODE (dns1.biblepay.org)
+                args = args.Append("-addnode=144.202.45.226").ToArray();
+              
+                var nodeSettings = new NodeSettings(network, protocolVersion:ProtocolVersion.ALT_PROTOCOL_VERSION, agent, args:args);
+                //nodeSettings.ApiUri = new Uri(string.IsNullOrEmpty(apiUri) ? DefaultStratisUri : apiUri);
+
 
                 IFullNode node = new FullNodeBuilder()
                     .UseNodeSettings(nodeSettings)
                     .UseBlockStore()
-                    .UsePosConsensus()
+                    .UsePowConsensus()
                     .UseMempool()
                     .UseWallet()
-                    .AddPowPosMining()
                     .UseApi()
                     .AddRPC()
                     .Build();

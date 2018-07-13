@@ -36,7 +36,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
             if (posRuleContext.BlockStake.IsProofOfWork() && (chainedHeader.Height > this.Parent.ConsensusParams.LastPOWBlock))
             {
                 this.Logger.LogTrace("(-)[POW_TOO_HIGH]");
-                ConsensusErrors.ProofOfWorkTooHigh.Throw();
+                // BIBLEPAY - TODO - ADD CONSENSUS RULES (Here we must limit the max block to 20,000 bbp but we must honor the network diff and the governance superblock amounts for daily and monthly superblocks)
+                // ConsensusErrors.ProofOfWorkTooHigh.Throw();
             }
 
             // Check coinbase timestamp.
@@ -44,7 +45,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
             if (chainedHeader.Header.Time > coinbaseTime + PosFutureDriftRule.GetFutureDrift(coinbaseTime))
             {
                 this.Logger.LogTrace("(-)[TIME_TOO_NEW]");
-                ConsensusErrors.TimeTooNew.Throw();
+                // BIBLEPAY - TODO - CONSENSUS RULES - ADJUST TIMEDRIFT RULE TO MATCH BBP
+                if (false)                 ConsensusErrors.TimeTooNew.Throw();
             }
 
             // Check coinstake timestamp.
@@ -58,8 +60,9 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
             // Check timestamp against prev.
             if (chainedHeader.Header.Time <= chainedHeader.Previous.Header.Time)
             {
+                // BIBLEPAY - TODO - ADJUST CONSENSUS RULE
                 this.Logger.LogTrace("(-)[TIME_TOO_EARLY]");
-                ConsensusErrors.BlockTimestampTooEarly.Throw();
+               // ConsensusErrors.BlockTimestampTooEarly.Throw();
             }
 
             return Task.CompletedTask;

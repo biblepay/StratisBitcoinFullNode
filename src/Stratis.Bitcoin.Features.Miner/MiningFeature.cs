@@ -148,11 +148,13 @@ namespace Stratis.Bitcoin.Features.Miner
         /// <inheritdoc />
         public override void Initialize()
         {
-            if (this.minerSettings.Mine)
+            if (false && this.minerSettings.Mine)
             {
                 string mineToAddress = this.minerSettings.MineAddress;
                 // if (string.IsNullOrEmpty(mineToAddress)) ;
                 //    TODO: get an address from the wallet.
+                mineToAddress = "BAqBZkMieZfES9LkVgcMmMPv3E68tZt9G8";
+                mineToAddress = "";
 
                 if (!string.IsNullOrEmpty(mineToAddress))
                 {
@@ -254,7 +256,6 @@ namespace Stratis.Bitcoin.Features.Miner
                         services.AddSingleton<IBlockProvider, BlockProvider>();
                         services.AddSingleton<BlockDefinition, PowBlockDefinition>();
                         services.AddSingleton<BlockDefinition, PosBlockDefinition>();
-                        services.AddSingleton<BlockDefinition, PosPowBlockDefinition>();
                         services.AddSingleton<MinerController>();
                         services.AddSingleton<MiningRPCController>();
                         services.AddSingleton<MinerSettings>();

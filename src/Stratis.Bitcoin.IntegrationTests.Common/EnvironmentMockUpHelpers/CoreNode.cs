@@ -9,11 +9,11 @@ using Microsoft.Extensions.DependencyInjection;
 using NBitcoin;
 using NBitcoin.DataEncoders;
 using NBitcoin.Protocol;
+using NBitcoin.RPC;
 using Stratis.Bitcoin.Configuration.Logging;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
-using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.IntegrationTests.Common.Runners;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.P2P;
@@ -247,6 +247,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
             RPCClient rpc = this.CreateRPCClient();
             BitcoinSecret dest = this.GetFirstSecret(rpc);
             uint256 bestBlock = rpc.GetBestBlockHash();
+            ConcurrentChain chain = null;
             var blocks = new List<Block>();
             DateTimeOffset now = this.MockTime == null ? DateTimeOffset.UtcNow : this.MockTime.Value;
 
@@ -254,7 +255,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
             {
                 peer.VersionHandshakeAsync().GetAwaiter().GetResult();
 
-                var chain = bestBlock == this.runner.Network.GenesisHash ? new ConcurrentChain(this.runner.Network) : this.GetChain(peer);
+                chain = bestBlock == this.runner.Network.GenesisHash ? new ConcurrentChain(this.runner.Network) : this.GetChain(peer);
 
                 for (int i = 0; i < blockCount; i++)
                 {
@@ -265,7 +266,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
                     block.Header.Bits = block.Header.GetWorkRequired(rpc.Network, chain.Tip);
                     block.Header.UpdateTime(now, rpc.Network, chain.Tip);
 
-                    var coinbase = this.runner.Network.CreateTransaction();
+                    var coinbase = this.runner.Network.Consensus.ConsensusFactory.CreateTransaction();
                     coinbase.AddInput(TxIn.CreateCoinbase(chain.Height + 1));
                     coinbase.AddOutput(new TxOut(rpc.Network.GetReward(chain.Height + 1), dest.GetAddress()));
                     block.AddTransaction(coinbase);

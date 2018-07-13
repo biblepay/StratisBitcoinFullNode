@@ -50,7 +50,8 @@ namespace Stratis.Bitcoin.IntegrationTests.Common
 
         public static bool IsNodeConnected(CoreNode node)
         {
-            return node.FullNode.ConnectionManager.ConnectedPeers.Any(p => p.IsConnected);
+            if (node.FullNode.ConnectionManager.ConnectedPeers.Any()) return true;
+            return false;
         }
 
         /// <summary>

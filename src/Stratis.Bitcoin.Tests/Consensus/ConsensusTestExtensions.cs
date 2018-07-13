@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using NBitcoin;
 using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Tests.Common;
@@ -61,23 +60,6 @@ namespace Stratis.Bitcoin.Tests.Consensus
             }
 
             return true;
-        }
-
-        public static ChainedHeader[] HeadersToDownload(this ConnectNewHeadersResult connectNewHeadersResult)
-        {
-            if ((connectNewHeadersResult.DownloadFrom == null) || (connectNewHeadersResult.DownloadTo == null))
-            {
-                return null;
-            }
-
-            int blocksToDownload =
-                connectNewHeadersResult.DownloadTo.Height - connectNewHeadersResult.DownloadFrom.Height + 1;
-            return connectNewHeadersResult.DownloadFrom.ToArray(blocksToDownload);
-        }
-
-        public static bool HaveBlockDataAvailabilityStateOf(this ChainedHeader[] headers, BlockDataAvailabilityState blockDataAvailabilityState)
-        {
-            return headers.All(h => h.BlockDataAvailability == blockDataAvailabilityState);
         }
     }
 }
